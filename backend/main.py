@@ -256,24 +256,21 @@ async def fetch_nvd_cves() -> list[dict]:
 
 
 async def fetch_phishing_urls() -> list[dict]:
-    """
-    Fetch active phishing/malware URLs from URLhaus.
-    Completely free, no authentication required.
-    """
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             response = await client.post(
                 "https://urlhaus-api.abuse.ch/v1/urls/recent/",
-                data={"limit": "20"}
+                data={"limit": "20"},
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
             )
-
             if response.status_code != 200:
                 print(f"URLhaus error: {response.status_code}")
                 return []
 
             data = response.json()
             phishing = []
-
             for url_data in data.get("urls", []):
                 if url_data.get("url_status") == "online":
                     phishing.append({
@@ -282,46 +279,10 @@ async def fetch_phishing_urls() -> list[dict]:
                         "date_added": url_data.get("date_added", ""),
                         "threat": url_data.get("threat", "malware"),
                     })
-
-            print(f"Fetched {len(phishing)} phishing URLs from URLhaus")
             return phishing[:10]
-
     except Exception as e:
         print(f"URLhaus fetch error: {e}")
         return []
-
-# ─── Stats Calculator ─────────────────────────────────────────────────────────
-def compute_stats(attacks: list[dict]) -> dict:
-    """Compute aggregate statistics from attack records."""
-    if not attacks:
-        return {}
-
-    type_count: dict = {}
-    sector_count: dict = {}
-    state_count: dict = {}
-    country_count: dict = {}
-
-    for a in attacks:
-        t = a.get("attack_type", "Unknown")
-        type_count[t] = type_count.get(t, 0) + 1
-
-        s = a.get("target_sector", "Unknown")
-        sector_count[s] = sector_count.get(s, 0) + 1
-
-        st = a.get("target_state", "Unknown")
-        state_count[st] = state_count.get(st, 0) + 1
-
-        c = a.get("source_country", "Unknown")
-        country_count[c] = country_count.get(c, 0) + 1
-
-    return {
-        "total_attacks": len(attacks),
-        "attack_types": dict(sorted(type_count.items(), key=lambda x: -x[1])),
-        "sectors": dict(sorted(sector_count.items(), key=lambda x: -x[1])),
-        "states": dict(sorted(state_count.items(), key=lambda x: -x[1])),
-        "top_sources": dict(sorted(country_count.items(), key=lambda x: -x[1])[:10]),
-        "last_updated": datetime.utcnow().isoformat(),
-    }
 
 # ─── Scheduled Jobs ───────────────────────────────────────────────────────────
 async def refresh_attacks():
@@ -376,7 +337,7 @@ async def startup():
     print("Starting India Cyber Map API...")
 
     # Schedule jobs
-    scheduler.add_job(refresh_attacks, "interval", seconds=30, id="attacks")
+    scheduler.add_job(refresh_attacks, "interval", minutes=10, id="attacks")
     scheduler.add_job(refresh_cves,    "interval", hours=1,   id="cves")
     scheduler.add_job(refresh_phishing,"interval", minutes=15, id="phishing")
     scheduler.start()
