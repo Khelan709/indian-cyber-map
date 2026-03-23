@@ -1,0 +1,27 @@
+# Environment files (NEVER commit these - contain secret keys)
+.env
+backend/.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+backend/venv/
+.venv/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
