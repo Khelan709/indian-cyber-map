@@ -331,6 +331,10 @@ async def refresh_phishing():
         await broadcast({"type": "phishing", "data": phish})
 
 # ─── App Lifecycle ────────────────────────────────────────────────────────────
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import JSONResponse
+
 @app.on_event("startup")
 async def startup():
     """Start background jobs when the server boots."""
@@ -367,6 +371,9 @@ async def root():
         "connected_clients": len(active_connections),
     }
 
+@app.head("/")
+async def root_head():
+    return JSONResponse(content={})
 
 @app.get("/api/attacks")
 async def get_attacks(limit: int = 50):
